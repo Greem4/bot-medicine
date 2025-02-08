@@ -1,0 +1,15 @@
+app:
+  bot:
+    mame: greem_lab_bot
+    token: ${TOKEN_BOT}
+medicine:
+  api:
+    url: https://medicine.greemlab.ru/api/v1/medicines
+
+spring:
+  messages:
+    encoding: UTF-8
+    basename: i18n/messages
+
+logging:
+  config: classpath:logback-spring.xml
