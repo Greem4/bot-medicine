@@ -16,6 +16,7 @@ import ru.greemlab.botmedicine.service.MedicineService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Getter
@@ -47,19 +48,16 @@ public class MedicineBot extends TelegramLongPollingBot {
                                     if (redList.isEmpty()) {
                                         editText(chatId, messageId, "✅ Нет просроченных лекарств.");
                                     } else {
-                                        StringBuilder sb = new StringBuilder("⏰ Сроки годности менее 30 дней:\n\n");
-                                        for (MedicineViewList m : redList) {
-                                            sb.append("⚠")
-                                                    .append(m.name())
-                                                    .append(" (").append(m.serialNumber()).append(")\n     срок годности до:  ")
-                                                    .append(m.expirationDate())
-                                                    .append("\n");
-                                        }
-                                        editText(chatId, messageId, sb.toString());
+                                        String header = "*Сроки годности менее 30 дней:*\n\n";
+                                        String formattedMedicines = redList.stream()
+                                                .map(this::formatMedicine)
+                                                .collect(Collectors.joining(""));
+                                        String message = header + formattedMedicines;
+                                        editText(chatId, messageId, message);
                                     }
                                 },
                                 error -> {
-                                    log.error("Ошибка при получении списка RED: {}", error.toString());
+                                    log.error("Ошибка при получении списка лекарств: {}", error.toString());
                                     editText(chatId, messageId, "❗ Произошла ошибка при запросе к серверу.");
                                 }
                         );
@@ -74,17 +72,18 @@ public class MedicineBot extends TelegramLongPollingBot {
             switch (text.toLowerCase()) {
                 case "/start" -> {
                     String welcome = "👋 Привет! Я бот для проверки лекарств 💊. " +
-                                     "Нажмите кнопку, чтобы посмотреть ⏰ сроки годности.";
+                                     "Нажмите кнопку, чтобы посмотреть ⏰ *сроки годности*.";
                     sendTextWithInlineButton(chatId, welcome);
                 }
                 case "/help" -> {
                     String help = """
-                            📜 Команды:
+                            *Команды:*
                             
                             /start – начать работу
                             /help – помощь
                             
-                            используйте /start.""";
+                            Используйте /start для начала работы.
+                            """;
                     sendText(chatId, help);
                 }
                 default -> sendText(chatId, "❓ Неизвестная команда. Попробуйте /help.");
@@ -97,6 +96,7 @@ public class MedicineBot extends TelegramLongPollingBot {
             execute(SendMessage.builder()
                     .chatId(chatId.toString())
                     .text(text)
+                    .parseMode("Markdown")
                     .build());
         } catch (Exception e) {
             log.error("Ошибка при отправке сообщения: {}", e.toString());
@@ -117,6 +117,7 @@ public class MedicineBot extends TelegramLongPollingBot {
                     .chatId(chatId.toString())
                     .text(text)
                     .replyMarkup(markup)
+                    .parseMode("Markdown")
                     .build());
         } catch (Exception e) {
             log.error("Ошибка при отправке inline-кнопки: {}", e.toString());
@@ -129,9 +130,18 @@ public class MedicineBot extends TelegramLongPollingBot {
                     .chatId(chatId.toString())
                     .messageId(messageId)
                     .text(newText)
+                    .parseMode("Markdown")
                     .build());
         } catch (Exception e) {
             log.error("Ошибка при редактировании сообщения: {}", e.toString());
         }
+    }
+
+    private String formatMedicine(MedicineViewList m) {
+        return String.format("""
+                        - *%s* (%s)
+                        Срок годности до: *%s*
+                        """,
+                m.name(), m.serialNumber(), m.expirationDate());
     }
 }
