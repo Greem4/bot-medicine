@@ -1,11 +1,14 @@
 package ru.greemlab.botmedicine.bot;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -15,6 +18,9 @@ import ru.greemlab.botmedicine.service.MedicineService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -24,7 +30,7 @@ public class MedicineBot extends TelegramLongPollingBot {
 
     private final String BOT_NAME = "greem_lab_bot";
 
-    @lombok.Getter
+    @Getter
     @Value("${app.bot.token}")
     private String botToken;
 
@@ -39,9 +45,22 @@ public class MedicineBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
 
         if (update.hasCallbackQuery()) {
-            var callbackData = update.getCallbackQuery().getData();
-            var chatId = update.getCallbackQuery().getMessage().getChatId();
-            var messageId = update.getCallbackQuery().getMessage().getMessageId();
+            var callbackQuery = update.getCallbackQuery();
+            var callbackData = callbackQuery.getData();
+            var callbackQueryId = callbackQuery.getId();
+            var chatId = callbackQuery.getMessage().getChatId();
+            var messageId = callbackQuery.getMessage().getMessageId();
+
+            // Отправляем уведомление (toast) только тому, кто нажал кнопку
+            try {
+                execute(AnswerCallbackQuery.builder()
+                        .callbackQueryId(callbackQueryId)
+                        .text("Запрос обрабатывается…")
+                        .showAlert(false)
+                        .build());
+            } catch (Exception e) {
+                log.error("Ошибка при отправке ответа на callback query: {}", e.toString());
+            }
 
             if ("CHECK_RED".equalsIgnoreCase(callbackData)) {
                 medicineService.getRedMedicines()
@@ -69,21 +88,22 @@ public class MedicineBot extends TelegramLongPollingBot {
         }
 
         if (update.hasMessage() && update.getMessage().hasText()) {
-            var text = update.getMessage().getText();
+            var text = update.getMessage().getText().trim();
             var chatId = update.getMessage().getChatId();
-
-            var command = text.split(" ")[0].toLowerCase();
+            // Получаем ID сообщения пользователя (оно будет удалено через заданное время)
+            var userMessageId = update.getMessage().getMessageId();
+            var command = text.split("\\s+")[0].toLowerCase();
 
             switch (command) {
                 case "/hi", "/hi@" + BOT_NAME -> {
                     var hi = """
                             👋 Привет! Я бот для проверки лекарств 💊.
-                            Что бы начать нажмите /start
+                            Чтобы начать, нажмите /start
                             """;
                     sendText(chatId, hi);
                 }
                 case "/start", "/start@" + BOT_NAME -> {
-                    var welcome = "Нажмите кнопку, чтобы посмотреть ⏰ *сроки годности*.";
+                    var welcome = "Нажмите кнопку, чтобы посмотреть *сроки годности*.";
                     sendTextWithInlineButton(chatId, welcome);
                 }
                 case "/help", "/help@" + BOT_NAME -> {
@@ -91,7 +111,7 @@ public class MedicineBot extends TelegramLongPollingBot {
                             *Команды:*
                             
                             /start – начать работу
-                            /hi - приветствие
+                            /hi – приветствие
                             /help – помощь
                             
                             Используйте /start для начала работы.
@@ -100,6 +120,8 @@ public class MedicineBot extends TelegramLongPollingBot {
                 }
                 default -> sendText(chatId, "❓ Неизвестная команда. Попробуйте /help.");
             }
+            // Планируем удаление сообщения пользователя через 10 секунд
+            scheduleDeleteMessage(chatId, userMessageId);
         }
     }
 
@@ -162,5 +184,21 @@ public class MedicineBot extends TelegramLongPollingBot {
 
     private String escapeMarkdownV2(String text) {
         return text.replaceAll("([_*\\[\\]()~`>#+=|{}.!-])", "\\\\$1");
+    }
+
+    // Метод для планирования удаления сообщения через delaySeconds секунд
+    private void scheduleDeleteMessage(Long chatId, Integer messageId) {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.schedule(() -> {
+            try {
+                execute(DeleteMessage.builder()
+                        .chatId(chatId.toString())
+                        .messageId(messageId)
+                        .build());
+            } catch (Exception e) {
+                log.error("Ошибка при удалении сообщения: {}", e.toString());
+            }
+            scheduler.shutdown();
+        }, 10, TimeUnit.SECONDS);
     }
 }
