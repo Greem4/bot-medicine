@@ -39,7 +39,6 @@ public class MedicineService {
                    }
                    return Flux.fromIterable(response._embedded().medicineViewList());
                 });
-
     }
 
     public Flux<MedicineViewList> getRedMedicines() {

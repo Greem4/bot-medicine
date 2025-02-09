@@ -1,6 +1,6 @@
 app:
   bot:
-    mame: greem_lab_bot
+    name: greem_lab_bot
     token: ${TOKEN_BOT}
 medicine:
   api:

@@ -32,8 +32,6 @@ dependencies {
 
     implementation "io.projectreactor:reactor-core:${versions.reactor}"
 
-//    implementation 'com.fasterxml.jackson.core:jackson-databind'
-
     implementation 'org.projectlombok:lombok'
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'

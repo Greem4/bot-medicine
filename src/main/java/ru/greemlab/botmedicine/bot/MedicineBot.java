@@ -1,7 +1,10 @@
 package ru.greemlab.botmedicine.bot;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -15,24 +18,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
+@Getter
+@Component
+@RequiredArgsConstructor
 public class MedicineBot extends TelegramLongPollingBot {
 
-    private final String name;
-    @Getter
-    private final String token;
+    @Value("${app.bot.name}")
+    private String botUsername;
+
+    @Value("${app.bot.token}")
+    private String botToken;
+
     private final MedicineService medicineService;
-
-    public MedicineBot(String name, String token, MedicineService medicineService) {
-        super(token);
-        this.name = name;
-        this.token = token;
-        this.medicineService = medicineService;
-    }
-
-    @Override
-    public String getBotUsername() {
-        return name;
-    }
 
     @Override
     public void onUpdateReceived(Update update) {
@@ -48,13 +45,13 @@ public class MedicineBot extends TelegramLongPollingBot {
                         .subscribe(
                                 redList -> {
                                     if (redList.isEmpty()) {
-                                        editText(chatId, messageId, "Нет просроченных лекарств.");
+                                        editText(chatId, messageId, "✅ Нет просроченных лекарств.");
                                     } else {
-                                        StringBuilder sb = new StringBuilder("Сроки годности менее 30 дней :\n");
+                                        StringBuilder sb = new StringBuilder("⏰ Сроки годности менее 30 дней:\n\n");
                                         for (MedicineViewList m : redList) {
-                                            sb.append("• ")
+                                            sb.append("⚠")
                                                     .append(m.name())
-                                                    .append(" (").append(m.serialNumber()).append(") — ")
+                                                    .append(" (").append(m.serialNumber()).append(")\n     срок годности до:  ")
                                                     .append(m.expirationDate())
                                                     .append("\n");
                                         }
@@ -63,7 +60,7 @@ public class MedicineBot extends TelegramLongPollingBot {
                                 },
                                 error -> {
                                     log.error("Ошибка при получении списка RED: {}", error.toString());
-                                    editText(chatId, messageId, "Произошла ошибка при запросе к серверу.");
+                                    editText(chatId, messageId, "❗ Произошла ошибка при запросе к серверу.");
                                 }
                         );
             }
@@ -76,15 +73,21 @@ public class MedicineBot extends TelegramLongPollingBot {
 
             switch (text.toLowerCase()) {
                 case "/start" -> {
-                    String welcome = "Привет! Я бот для проверки лекарств. Нажмите кнопку, чтобы посмотреть " +
-                                     "Сроки годности";
+                    String welcome = "👋 Привет! Я бот для проверки лекарств 💊. " +
+                                     "Нажмите кнопку, чтобы посмотреть ⏰ сроки годности.";
                     sendTextWithInlineButton(chatId, welcome);
                 }
                 case "/help" -> {
-                    String help = "Команды:\n/start\n/help\n(или нажмите кнопку, Сроки годности).";
+                    String help = """
+                            📜 Команды:
+                            
+                            /start – начать работу
+                            /help – помощь
+                            
+                            используйте /start.""";
                     sendText(chatId, help);
                 }
-                default -> sendText(chatId, "Неизвестная команда. Попробуйте /help");
+                default -> sendText(chatId, "❓ Неизвестная команда. Попробуйте /help.");
             }
         }
     }
@@ -101,11 +104,11 @@ public class MedicineBot extends TelegramLongPollingBot {
     }
 
     private void sendTextWithInlineButton(Long chatId, String text) {
-        InlineKeyboardButton button = new InlineKeyboardButton("Показать сроки годности");
+        InlineKeyboardButton button = new InlineKeyboardButton("⏰ Показать сроки годности");
         button.setCallbackData("CHECK_RED");
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-        rows.add(List.of(button)); // одна строка с одной кнопкой
+        rows.add(List.of(button));
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup(rows);
 
