@@ -1,10 +1,9 @@
 app:
   bot:
-    name: greem_lab_bot
     token: ${TOKEN_BOT}
 medicine:
   api:
-    url: https://medicine.greemlab.ru/api/v1/medicines
+    url: ${API_URL}
 
 logging:
   config: classpath:logback-spring.xml
