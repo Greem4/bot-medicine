@@ -130,7 +130,7 @@ public class MedicineBot extends TelegramLongPollingBot {
                     .chatId(chatId.toString())
                     .messageId(messageId)
                     .text(newText)
-                    .parseMode("Markdown")
+                    .parseMode("MarkdownV2")
                     .build());
         } catch (Exception e) {
             log.error("Ошибка при редактировании сообщения: {}", e.toString());
@@ -139,9 +139,15 @@ public class MedicineBot extends TelegramLongPollingBot {
 
     private String formatMedicine(MedicineViewList m) {
         return String.format("""
-                        - *%s* (%s)
-                        Срок годности до: *%s*
+                        • *%s* \\(%s\\)
+                         Срок годности до : *%s*
                         """,
-                m.name(), m.serialNumber(), m.expirationDate());
+                escapeMarkdownV2(m.name()),
+                escapeMarkdownV2(m.serialNumber()),
+                escapeMarkdownV2(m.expirationDate()));
+    }
+
+    private String escapeMarkdownV2(String text) {
+        return text.replaceAll("([_*\\[\\]()~`>#+=|{}.!-])", "\\\\$1");
     }
 }
