@@ -26,7 +26,7 @@ public class MedicineService {
     public Flux<MedicineViewList> getAllMedicines() {
         return fetchPage(url)
                 .expand(response -> {
-                    String nextUrl = extractNextLink(response);
+                    var nextUrl = extractNextLink(response);
                     if (nextUrl == null) {
                         return Mono.empty();
                     }

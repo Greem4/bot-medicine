@@ -1,6 +1,5 @@
 package ru.greemlab.botmedicine.bot;
 
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,26 +18,30 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Getter
 @Component
 @RequiredArgsConstructor
 public class MedicineBot extends TelegramLongPollingBot {
 
-    @Value("${app.bot.name}")
-    private String botUsername;
+    private final String BOT_NAME = "greem_lab_bot";
 
+    @lombok.Getter
     @Value("${app.bot.token}")
     private String botToken;
 
     private final MedicineService medicineService;
 
     @Override
+    public String getBotUsername() {
+        return BOT_NAME;
+    }
+
+    @Override
     public void onUpdateReceived(Update update) {
 
         if (update.hasCallbackQuery()) {
-            String callbackData = update.getCallbackQuery().getData();
-            Long chatId = update.getCallbackQuery().getMessage().getChatId();
-            Integer messageId = update.getCallbackQuery().getMessage().getMessageId();
+            var callbackData = update.getCallbackQuery().getData();
+            var chatId = update.getCallbackQuery().getMessage().getChatId();
+            var messageId = update.getCallbackQuery().getMessage().getMessageId();
 
             if ("CHECK_RED".equalsIgnoreCase(callbackData)) {
                 medicineService.getRedMedicines()
@@ -48,11 +51,11 @@ public class MedicineBot extends TelegramLongPollingBot {
                                     if (redList.isEmpty()) {
                                         editText(chatId, messageId, "✅ Нет просроченных лекарств.");
                                     } else {
-                                        String header = "*Сроки годности менее 30 дней:*\n\n";
-                                        String formattedMedicines = redList.stream()
+                                        var header = "*Сроки годности менее 30 дней:*\n\n";
+                                        var formattedMedicines = redList.stream()
                                                 .map(this::formatMedicine)
                                                 .collect(Collectors.joining(""));
-                                        String message = header + formattedMedicines;
+                                        var message = header + formattedMedicines;
                                         editText(chatId, messageId, message);
                                     }
                                 },
@@ -66,20 +69,29 @@ public class MedicineBot extends TelegramLongPollingBot {
         }
 
         if (update.hasMessage() && update.getMessage().hasText()) {
-            String text = update.getMessage().getText();
-            Long chatId = update.getMessage().getChatId();
+            var text = update.getMessage().getText();
+            var chatId = update.getMessage().getChatId();
 
-            switch (text.toLowerCase()) {
-                case "/start" -> {
-                    String welcome = "👋 Привет! Я бот для проверки лекарств 💊. " +
-                                     "Нажмите кнопку, чтобы посмотреть ⏰ *сроки годности*.";
+            var command = text.split(" ")[0].toLowerCase();
+
+            switch (command) {
+                case "/hi", "/hi@" + BOT_NAME -> {
+                    var hi = """
+                            👋 Привет! Я бот для проверки лекарств 💊.
+                            Что бы начать нажмите /start
+                            """;
+                    sendText(chatId, hi);
+                }
+                case "/start", "/start@" + BOT_NAME -> {
+                    var welcome = "Нажмите кнопку, чтобы посмотреть ⏰ *сроки годности*.";
                     sendTextWithInlineButton(chatId, welcome);
                 }
-                case "/help" -> {
-                    String help = """
+                case "/help", "/help@" + BOT_NAME -> {
+                    var help = """
                             *Команды:*
                             
                             /start – начать работу
+                            /hi - приветствие
                             /help – помощь
                             
                             Используйте /start для начала работы.
@@ -104,7 +116,7 @@ public class MedicineBot extends TelegramLongPollingBot {
     }
 
     private void sendTextWithInlineButton(Long chatId, String text) {
-        InlineKeyboardButton button = new InlineKeyboardButton("⏰ Показать сроки годности");
+        var button = new InlineKeyboardButton("⏰ Показать сроки годности");
         button.setCallbackData("CHECK_RED");
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
@@ -140,7 +152,8 @@ public class MedicineBot extends TelegramLongPollingBot {
     private String formatMedicine(MedicineViewList m) {
         return String.format("""
                         • *%s* \\(%s\\)
-                         Срок годности до : *%s*
+                          Срок годности до:
+                          ➡*%s*
                         """,
                 escapeMarkdownV2(m.name()),
                 escapeMarkdownV2(m.serialNumber()),
