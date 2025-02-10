@@ -1,6 +1,7 @@
 app:
   bot:
-    token: ${TOKEN_BOT}
+    botToken: ${TOKEN_BOT}
+    botUsername: greem_lab_bot
 medicine:
   api:
     url: ${API_URL}
