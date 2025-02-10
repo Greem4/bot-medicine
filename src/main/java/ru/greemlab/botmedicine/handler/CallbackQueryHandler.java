@@ -47,10 +47,8 @@ public class CallbackQueryHandler {
                                 messageService.editText(chatId, messageId, "❗ Произошла ошибка при запросе к серверу.");
                             }
                     );
-
         }
     }
-
     private String formatMedicine(MedicineResponse.MedicineViewList m) {
         return String.format("""
                 • *%s* \\(%s\\)

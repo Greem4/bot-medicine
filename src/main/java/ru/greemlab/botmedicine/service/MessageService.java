@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import ru.greemlab.botmedicine.telegram.TelegramExecutor;
@@ -20,20 +21,21 @@ public class MessageService {
 
     private final TelegramExecutor execute;
 
-    public void sendText(Long chatId, String text) {
+    public Message sendText(Long chatId, String text) {
         try {
             var msg = SendMessage.builder()
                     .chatId(chatId.toString())
                     .text(text)
                     .parseMode("Markdown")
                     .build();
-            execute.callApi(msg);
+            return execute.callApi(msg);
         } catch (Exception e) {
             log.error("Ошибка при отправке сообщения: {}", e.toString());
+            return null;
         }
     }
 
-    public void sendTextWithInLineButton(Long chatId, String text,
+    public Message sendTextWithInLineButton(Long chatId, String text,
                                          String buttonText, String callbackData) {
         var button = new InlineKeyboardButton(buttonText);
         button.setCallbackData(callbackData);
@@ -50,9 +52,10 @@ public class MessageService {
                     .replyMarkup(markup)
                     .parseMode("Markdown")
                     .build();
-            execute.callApi(msg);
+            return execute.callApi(msg);
         } catch (Exception e) {
             log.error("Ошибка при отправке inline-кнопки: {}", e.toString());
+            return null;
         }
     }
 
