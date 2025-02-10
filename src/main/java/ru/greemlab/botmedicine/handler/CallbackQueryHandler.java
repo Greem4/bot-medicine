@@ -14,6 +14,12 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class CallbackQueryHandler {
+    private static final String CALLBACK_CHECK_RED = "CHECK_RED";
+    private static final String PROCESSING_MESSAGE = "Запрос обрабатывается…";
+    private static final String NO_MEDICINES_MESSAGE = "✅ Нет просроченных лекарств.";
+    private static final String ERROR_MESSAGE = "❗ Произошла ошибка при запросе к серверу.";
+    private static final String UNKNOWN_CALLBACK_MESSAGE = "❓ Неизвестное действие.";
+    private static final String HEADER = "*Сроки годности менее 30 дней:*\n\n";
 
     private final MedicineService medicineService;
     private final MessageService messageService;
@@ -21,36 +27,41 @@ public class CallbackQueryHandler {
     public void handleCallback(CallbackQuery callbackQuery) {
         var callbackData = callbackQuery.getData();
         var callbackQueryId = callbackQuery.getId();
-        var chatId = callbackQuery.getMessage().getChatId();
-        var messageId = callbackQuery.getMessage().getMessageId();
+        var message = callbackQuery.getMessage();
+        var chatId = message.getChatId();
+        var messageId = message.getMessageId();
 
-        messageService.answerCallbackQuery(callbackQueryId, "Запрос обрабатывается…", false);
+        messageService.answerCallbackQuery(callbackQueryId, PROCESSING_MESSAGE, false);
 
-        if ("CHECK_RED".equalsIgnoreCase(callbackData)) {
-            medicineService.getRedMedicines()
-                    .collectList()
-                    .subscribe(
-                            redList -> {
-                                if (redList.isEmpty()) {
-                                    messageService.editText(chatId, messageId, "✅ Нет просроченных лекарств.");
-                                } else {
-                                    var header = "*Сроки годности менее 30 дней:*\n\n";
-                                    var formattedMedicines = redList.stream()
-                                            .map(this::formatMedicine)
-                                            .collect(Collectors.joining(""));
-                                    var result = header + formattedMedicines;
-                                    messageService.editText(chatId, messageId, result);
-                                }
-                            },
-                            error -> {
-                                log.error("Ошибка при получении списка лекарств: {}", error.toString());
-                                messageService.editText(chatId, messageId, "❗ Произошла ошибка при запросе к серверу.");
-                            }
-                    );
-
+        if (CALLBACK_CHECK_RED.equalsIgnoreCase(callbackData)) {
+            handleCheckRedCallback(chatId, messageId);
+        } else {
+            log.warn("Неизвестное значение callback: {}", callbackData);
+            messageService.editText(chatId, messageId, UNKNOWN_CALLBACK_MESSAGE);
         }
     }
 
+    private void handleCheckRedCallback(Long chatId, Integer messageId) {
+        medicineService.getRedMedicines()
+                .collectList()
+                .subscribe(
+                        redList -> {
+                            if (redList.isEmpty()) {
+                                messageService.editText(chatId, messageId, NO_MEDICINES_MESSAGE);
+                            } else {
+                                var formattedMedicines = redList.stream()
+                                        .map(this::formatMedicine)
+                                        .collect(Collectors.joining());
+                                var result = HEADER + formattedMedicines;
+                                messageService.editText(chatId, messageId, result);
+                            }
+                        },
+                        error -> {
+                            log.error("Ошибка при получении списка лекарств", error);
+                            messageService.editText(chatId, messageId, ERROR_MESSAGE);
+                        }
+                );
+    }
     private String formatMedicine(MedicineResponse.MedicineViewList m) {
         return String.format("""
                 • *%s* \\(%s\\)

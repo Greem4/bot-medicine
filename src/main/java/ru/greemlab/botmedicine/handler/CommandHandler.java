@@ -11,6 +11,11 @@ import ru.greemlab.botmedicine.service.MessageService;
 @Component
 @RequiredArgsConstructor
 public class CommandHandler {
+    private static final int USER_MESSAGE_DELAY = 10;
+    private static final int HI_DELAY = 20;
+    private static final int DEFAULT_DELAY = 25;
+    private static final int START_DELAY = 36000;
+    private static final int HELP_DELAY = 100;
 
     private final MessageService messageService;
     private final DeleteScheduler deleteScheduler;
@@ -20,23 +25,26 @@ public class CommandHandler {
         var chatId = message.getChatId();
         var userMessageId = message.getMessageId();
 
-        var command = text.split("\\s")[0].toLowerCase();
-        final var BOT_NAME = "greem_lab_bot";
+        var command = text.split("\\s")[0].toLowerCase().split("@")[0];
+
+        deleteScheduler.schedulerDeleteMessage(chatId, userMessageId, USER_MESSAGE_DELAY);
 
         switch (command) {
-            case "/hi", "/hi@" + BOT_NAME -> {
+            case "/hi" -> {
                 var hi = """
                         👋 Привет! Я бот для проверки лекарств 💊.
-                           Чтобы начать, нажмите /start
+                        Чтобы начать, нажмите /start
                         """;
-                messageService.sendText(chatId, hi);
+                var botMessage = messageService.sendText(chatId, hi);
+                sendAndDeleteMessage(botMessage, chatId, HI_DELAY);
             }
-            case "/start", "/start@" + BOT_NAME -> {
+            case "/start" -> {
                 var welcome = "Нажмите кнопку, чтобы посмотреть *сроки годности*.";
-                messageService.sendTextWithInLineButton(chatId, welcome,
+                var botMessage = messageService.sendTextWithInLineButton(chatId, welcome,
                         "⏰ Показать сроки годности", "CHECK_RED");
+                sendAndDeleteMessage(botMessage, chatId, START_DELAY);
             }
-            case "/help", "/help@" + BOT_NAME -> {
+            case "/help" -> {
                 var help = """
                         *Команды:*
                         
@@ -46,11 +54,19 @@ public class CommandHandler {
                         
                         Используйте /start для начала работы.
                         """;
-                messageService.sendText(chatId, help);
+                var botMessage = messageService.sendText(chatId, help);
+                sendAndDeleteMessage(botMessage, chatId, HELP_DELAY);
             }
-            default ->
-                    messageService.sendText(chatId, "❓ Неизвестная команда. Попробуйте /help.");
+            default -> {
+                var botMessage = messageService
+                        .sendText(chatId, "❓ Неизвестная команда. Попробуйте /help.");
+                sendAndDeleteMessage(botMessage, chatId, DEFAULT_DELAY);
+            }
         }
-        deleteScheduler.schedulerDeleteMessage(chatId, userMessageId, 10);
+    }
+    private void sendAndDeleteMessage(Message botMessage, Long chatId, int delaySeconds) {
+        if (botMessage != null) {
+            deleteScheduler.schedulerDeleteMessage(chatId, botMessage.getMessageId(), delaySeconds);
+        }
     }
 }

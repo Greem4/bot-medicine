@@ -20,9 +20,9 @@ public class TelegramExecutor extends DefaultAbsSender {
         super(new DefaultBotOptions(), botToken);
     }
 
-    public <T extends Serializable, M extends BotApiMethod<T>> void callApi(M method) {
+    public <T extends Serializable, M extends BotApiMethod<T>> T callApi(M method) {
         try {
-            execute(method);
+            return execute(method);
         } catch (TelegramApiException e) {
             log.error("Ошибка при вызове Telegram API: {}", e.getMessage(), e);
             throw new RuntimeException("Ошибка при обращении к Telegram Bot API", e);
