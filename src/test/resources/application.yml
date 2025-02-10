@@ -1,0 +1,10 @@
+app:
+  bot:
+    botToken: test
+    botUsername: test
+medicine:
+  api:
+    url: test
+
+logging:
+  config: classpath:logback-spring.xml

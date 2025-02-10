@@ -6,7 +6,7 @@ plugins {
 
 ext {
     versions = [
-            reactor: '3.6.3',
+            reactor     : '3.6.3',
             telegrambots: '6.9.7.1',
     ]
 }
@@ -42,5 +42,15 @@ dependencies {
 }
 
 tasks.named('test') {
+}
+
+test {
     useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    filter {
+        includeTestsMatching "*Test"
+    }
 }

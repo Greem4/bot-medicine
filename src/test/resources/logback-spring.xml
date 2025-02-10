@@ -22,12 +22,12 @@
         </encoder>
     </appender>
 
-    <root level="info">
+    <root level="debug">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </root>
 
-    <logger name="ru.greemlab" level="info" additivity="false">
+    <logger name="ru.greemlab" level="debug" additivity="false">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </logger>
