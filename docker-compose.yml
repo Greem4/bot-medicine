@@ -1,11 +1,13 @@
 services:
   medicine-bot:
     image: greem4/medicine-bot:latest
+    container_name: bot
     restart: always
     environment:
       BOT_USERNAME: ${BOT_USERNAME}
       TOKEN_BOT: ${TOKEN_BOT}
       API_URL: ${API_URL}
+      TZ: Europe/Moscow
     ports:
       - "8083:8083"
     deploy:
