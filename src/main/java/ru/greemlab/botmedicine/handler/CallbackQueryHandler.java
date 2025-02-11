@@ -25,19 +25,18 @@ public class CallbackQueryHandler {
     private final MessageService messageService;
 
     public void handleCallback(CallbackQuery callbackQuery) {
+        var userId = callbackQuery.getFrom().getId();
+        var messageId = callbackQuery.getMessage().getMessageId();
         var callbackData = callbackQuery.getData();
         var callbackQueryId = callbackQuery.getId();
-        var message = callbackQuery.getMessage();
-        var chatId = message.getChatId();
-        var messageId = message.getMessageId();
 
         messageService.answerCallbackQuery(callbackQueryId, PROCESSING_MESSAGE, false);
 
         if (CALLBACK_CHECK_RED.equalsIgnoreCase(callbackData)) {
-            handleCheckRedCallback(chatId, messageId);
+            handleCheckRedCallback(userId, messageId);
         } else {
             log.warn("Неизвестное значение callback: {}", callbackData);
-            messageService.editText(chatId, messageId, UNKNOWN_CALLBACK_MESSAGE);
+            messageService.sendText(userId, UNKNOWN_CALLBACK_MESSAGE);
         }
     }
 
@@ -62,12 +61,13 @@ public class CallbackQueryHandler {
                         }
                 );
     }
+
     private String formatMedicine(MedicineResponse.MedicineViewList m) {
         return String.format("""
-                • *%s* \\(%s\\)
-                  Срок годности до:
-                  ➡*%s*
-                """,
+                        • *%s* \\(%s\\)
+                          Срок годности до:
+                          ➡*%s*
+                        """,
                 messageService.escapeMarkdownV2(m.name()),
                 messageService.escapeMarkdownV2(m.serialNumber()),
                 messageService.escapeMarkdownV2(m.expirationDate())
