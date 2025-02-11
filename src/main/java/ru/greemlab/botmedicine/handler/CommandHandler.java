@@ -21,28 +21,37 @@ public class CommandHandler {
     private final DeleteScheduler deleteScheduler;
 
     public void handleCommand(Message message) {
-        var text = message.getText().trim();
+        var text = (message.getText() == null) ? "" : message.getText().trim();
         var chatId = message.getChatId();
         var userMessageId = message.getMessageId();
 
-        var command = text.split("\\s")[0].toLowerCase().split("@")[0];
+        if (!text.startsWith("/")) {
+            return;
+        }
 
         deleteScheduler.schedulerDeleteMessage(chatId, userMessageId, USER_MESSAGE_DELAY);
+
+        var userId = message.getFrom().getId();
+
+        var command = text.split("\\s")[0].toLowerCase().split("@")[0];
 
         switch (command) {
             case "/hi" -> {
                 var hi = """
                         👋 Привет! Я бот для проверки лекарств 💊.
-                        Чтобы начать, нажмите /start
+                        Чтобы начать, нажмите /start и мы перейдем в личную беседу
                         """;
                 var botMessage = messageService.sendText(chatId, hi);
                 sendAndDeleteMessage(botMessage, chatId, HI_DELAY);
             }
             case "/start" -> {
                 var welcome = "Нажмите кнопку, чтобы посмотреть *сроки годности*.";
-                var botMessage = messageService.sendTextWithInLineButton(chatId, welcome,
-                        "⏰ Показать сроки годности", "CHECK_RED");
-                sendAndDeleteMessage(botMessage, chatId, START_DELAY);
+
+                var botMessage = messageService
+                        .sendTextWithInLineButton(userId, welcome,
+                                "⏰ Показать сроки годности", "CHECK_RED");
+                sendAndDeleteMessage(botMessage, userId, START_DELAY);
+
             }
             case "/help" -> {
                 var help = """
@@ -54,19 +63,19 @@ public class CommandHandler {
                         
                         Используйте /start для начала работы.
                         """;
-                var botMessage = messageService.sendText(chatId, help);
-                sendAndDeleteMessage(botMessage, chatId, HELP_DELAY);
+                var botMessage = messageService.sendText(userId, help);
+                sendAndDeleteMessage(botMessage, userId, HELP_DELAY);
             }
             default -> {
                 var botMessage = messageService
-                        .sendText(chatId, "❓ Неизвестная команда. Попробуйте /help.");
-                sendAndDeleteMessage(botMessage, chatId, DEFAULT_DELAY);
+                        .sendText(userId, "❓ Неизвестная команда. Попробуйте /help.");
+                sendAndDeleteMessage(botMessage, userId, DEFAULT_DELAY);
             }
         }
     }
-    private void sendAndDeleteMessage(Message botMessage, Long chatId, int delaySeconds) {
+    private void sendAndDeleteMessage(Message botMessage, Long recipientId, int delaySeconds) {
         if (botMessage != null) {
-            deleteScheduler.schedulerDeleteMessage(chatId, botMessage.getMessageId(), delaySeconds);
+            deleteScheduler.schedulerDeleteMessage(recipientId, botMessage.getMessageId(), delaySeconds);
         }
     }
 }
