@@ -3,68 +3,64 @@ package ru.greemlab.botmedicine.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import org.springframework.web.client.RestTemplate;
 import ru.greemlab.botmedicine.dto.MedicineResponse;
 import ru.greemlab.botmedicine.dto.MedicineResponse.MedicineViewList;
 
-import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class MedicineService {
 
-    private final WebClient webClient;
+    private final RestTemplate restTemplate;
 
     @Value("${medicine.api.url}")
-    private String url;
+    private String baseUrl;
 
-    public Flux<MedicineViewList> getAllMedicines() {
-        return fetchPage(url)
-                .expand(response -> {
-                    var nextUrl = extractNextLink(response);
-                    if (nextUrl == null) {
-                        return Mono.empty();
-                    }
-                    return fetchPage(nextUrl);
-                })
-                .flatMap(response -> {
-                   if (response._embedded() == null ||
-                       response._embedded().medicineViewList() == null) {
-                      return Flux.empty();
-                   }
-                   return Flux.fromIterable(response._embedded().medicineViewList());
-                });
+    public List<MedicineViewList> getAllMedicines() {
+        List<MedicineViewList> all = new ArrayList<>();
+        String nextUrl = baseUrl;
+
+        while (nextUrl != null) {
+            MedicineResponse response = fetchPage(nextUrl);
+            if (response != null
+                && response._embedded() != null
+                && response._embedded().medicineViewList() != null) {
+                all.addAll(response._embedded().medicineViewList());
+            }
+            nextUrl = extractNextLink(response);
+        }
+        return all;
     }
 
-    public Flux<MedicineViewList> getRedMedicines() {
-        return getAllMedicines()
-                .filter(m -> "red".equalsIgnoreCase(m.color()));
+    public List<MedicineViewList> getRedMedicines() {
+        return getAllMedicines().stream()
+                .filter(m -> "red".equalsIgnoreCase(m.color()))
+                .toList();
     }
 
-    private Mono<MedicineResponse> fetchPage(String url) {
-        log.info("Fetching medicines from URL: {}", url);
-        return webClient.get()
-                .uri(url)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, clientResponse ->
-                        Mono.error(new RuntimeException("HTTP error: " + clientResponse.statusCode())))
-                .bodyToMono(MedicineResponse.class)
-                .timeout(Duration.ofSeconds(10))
-                .doOnError(ex -> log.error("Ошибка при запросе к {}: {}", url, ex.toString()));
+    private MedicineResponse fetchPage(String url) {
+        try {
+            var secureUrl = url.replaceFirst("^http://", "https://");
+            log.info("Fetching medicines from URL: {}", url);
+            var response = restTemplate.getForEntity(secureUrl, MedicineResponse.class);
+            return response.getBody();
+        } catch (Exception ex) {
+            log.error("Ошибка при запросе к {}: {}", url, ex.getMessage());
+            return null;
+        }
     }
 
     private String extractNextLink(MedicineResponse response) {
-        if (response == null || response._links() == null) {
-            return null;
-        }
-        var nextLink = response._links().next();
-        if (nextLink != null && nextLink.href() != null && !nextLink.href().isBlank()) {
-            return nextLink.href();
+        if (response != null && response._links() != null) {
+            MedicineResponse.Link nextLink = response._links().next();
+            if (nextLink != null && nextLink.href() != null && !nextLink.href().isBlank()) {
+                return nextLink.href();
+            }
         }
         return null;
     }
