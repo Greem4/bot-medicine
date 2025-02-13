@@ -8,6 +8,7 @@ import ru.greemlab.botmedicine.dto.MedicineResponse;
 import ru.greemlab.botmedicine.service.MedicineService;
 import ru.greemlab.botmedicine.service.MessageService;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -41,25 +42,20 @@ public class CallbackQueryHandler {
     }
 
     private void handleCheckRedCallback(Long chatId, Integer messageId) {
-        medicineService.getRedMedicines()
-                .collectList()
-                .subscribe(
-                        redList -> {
-                            if (redList.isEmpty()) {
-                                messageService.editText(chatId, messageId, NO_MEDICINES_MESSAGE);
-                            } else {
-                                var formattedMedicines = redList.stream()
-                                        .map(this::formatMedicine)
-                                        .collect(Collectors.joining());
-                                var result = HEADER + formattedMedicines;
-                                messageService.editText(chatId, messageId, result);
-                            }
-                        },
-                        error -> {
-                            log.error("Ошибка при получении списка лекарств", error);
-                            messageService.editText(chatId, messageId, ERROR_MESSAGE);
-                        }
-                );
+        try {
+            List<MedicineResponse.MedicineViewList> redList = medicineService.getRedMedicines();
+            if (redList == null || redList.isEmpty()) {
+                messageService.editText(chatId, messageId, NO_MEDICINES_MESSAGE);
+            } else {
+                String formatted = redList.stream()
+                        .map(this::formatMedicine)
+                        .collect(Collectors.joining());
+                messageService.editText(chatId, messageId, HEADER + formatted);
+            }
+        } catch (Exception e) {
+            log.error("Ошибка при получении списка лекарств", e);
+            messageService.editText(chatId, messageId, ERROR_MESSAGE);
+        }
     }
 
     private String formatMedicine(MedicineResponse.MedicineViewList m) {
