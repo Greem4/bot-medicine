@@ -1,5 +1,6 @@
 app:
   bot:
+    admin-id: ${ADMIN_ID}
     botToken: ${TOKEN_BOT}
     botUsername: ${BOT_USERNAME}
 medicine:
@@ -7,6 +8,15 @@ medicine:
     url: ${API_URL}
 
 spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+
   output:
     ansi:
       enabled: always

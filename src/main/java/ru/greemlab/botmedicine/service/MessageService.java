@@ -5,10 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.greemlab.botmedicine.telegram.TelegramExecutor;
 
 import java.util.ArrayList;
@@ -35,8 +38,22 @@ public class MessageService {
         }
     }
 
+    public Message sendPhoto(Long chatId, String photoUrl, String caption) {
+        var sendPhoto = new SendPhoto();
+        sendPhoto.setChatId(String.valueOf(chatId));
+        sendPhoto.setPhoto(new InputFile(photoUrl));
+        sendPhoto.setCaption(caption);
+
+        try {
+            return execute.callApiPhoto(sendPhoto);
+        } catch (RuntimeException e) {
+            log.error("Ошибка отправки : ", e);
+            return null;
+        }
+    }
+
     public Message sendTextWithInLineButton(Long chatId, String text,
-                                         String buttonText, String callbackData) {
+                                            String buttonText, String callbackData) {
         var button = new InlineKeyboardButton(buttonText);
         button.setCallbackData(callbackData);
 
