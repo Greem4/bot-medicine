@@ -52,14 +52,21 @@ public class MessageService {
         }
     }
 
-    public Message sendTextWithInLineButton(Long chatId, String text,
-                                            String buttonText, String callbackData) {
-        var button = new InlineKeyboardButton(buttonText);
-        button.setCallbackData(callbackData);
+    public Message sendTextWithTwoInlineButtons(Long chatId, String text,
+                                               String button1Text, String button1Callback,
+                                               String button2Text, String button2Callback) {
+
+        var btn1 = InlineKeyboardButton.builder()
+                .text(button1Text)
+                .callbackData(button1Callback)
+                .build();
+        var btn2 = InlineKeyboardButton.builder()
+                .text(button2Text)
+                .callbackData(button2Callback)
+                .build();
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-        rows.add(List.of(button));
-
+        rows.add(List.of(btn1, btn2));
         var markup = new InlineKeyboardMarkup(rows);
 
         try {
@@ -71,7 +78,7 @@ public class MessageService {
                     .build();
             return execute.callApi(msg);
         } catch (Exception e) {
-            log.error("Ошибка при отправке inline-кнопки: {}", e.toString());
+            log.error("Ошибка при отправке inline-кнопок: {}", e.toString());
             return null;
         }
     }

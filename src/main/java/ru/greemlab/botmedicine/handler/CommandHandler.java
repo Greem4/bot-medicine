@@ -10,17 +10,19 @@ import ru.greemlab.botmedicine.service.AuthorizedGroupUserService;
 import ru.greemlab.botmedicine.service.GroupScheduleService;
 import ru.greemlab.botmedicine.service.MessageService;
 
-import java.util.Optional;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class CommandHandler {
-    private static final int USER_MESSAGE_DELAY = 10;
-    private static final int HI_DELAY = 20;
-    private static final int DEFAULT_DELAY = 25;
-    private static final int START_DELAY = 36000;
-    private static final int HELP_DELAY = 100;
+    private static final int DELAY_10 = 10;
+    private static final int DELAY_15 = 15;
+    private static final int DELAY_20 = 20;
+    private static final int DELAY_25 = 25;
+    private static final int DELAY_100 = 100;
+    private static final int DELAY_DAY = 36000;
+
+    @Value("${app.bot.admin-id}")
+    private Long admin;
 
     private final MessageService messageService;
     private final DeleteScheduler deleteScheduler;
@@ -38,7 +40,7 @@ public class CommandHandler {
             return;
         }
 
-        deleteScheduler.schedulerDeleteMessage(chatId, userMessageId, USER_MESSAGE_DELAY);
+        deleteScheduler.schedulerDeleteMessage(chatId, userMessageId, DELAY_10);
 
         var userId = message.getFrom().getId();
 
@@ -60,51 +62,92 @@ public class CommandHandler {
                         Чтобы начать, нажмите /start и мы перейдем в личную беседу
                         """;
                 var botMessage = messageService.sendText(chatId, hi);
-                sendAndDeleteMessage(botMessage, chatId, HI_DELAY);
+                sendAndDeleteMessage(botMessage, chatId, DELAY_20);
             }
             case "/start" -> {
-                var welcome = "Нажмите кнопку, чтобы посмотреть *сроки годности*.";
-
+                var welcome = """
+                        *Добро пожаловать!*
+                        • Проверить *сроки годности* лекарств.
+                        • Посмотреть *график*.
+                        """;
                 var botMessage = messageService
-                        .sendTextWithInLineButton(userId, welcome,
-                                "⏰ Показать сроки годности", "CHECK_RED");
-                sendAndDeleteMessage(botMessage, userId, START_DELAY);
+                        .sendTextWithTwoInlineButtons(
+                                userId,
+                                welcome,
+                                "⏰ Сроки годности", "CHECK_RED",
+                                "📅 График", "VIEW_SCHEDULE"
+                        );
+                sendAndDeleteMessage(botMessage, userId, DELAY_DAY);
 
             }
             case "/schedule" -> {
-                if (chatId < 0) {
                     if (!groupScheduleService.isGroupRegistered(chatId)) {
                         var notRegMsg = messageService.sendText(chatId,
                                 "Эта группа не зарегистрирована, график недоступен.");
-                        sendAndDeleteMessage(notRegMsg, userId, DEFAULT_DELAY);
+                        sendAndDeleteMessage(notRegMsg, userId, DELAY_25);
                     } else {
                         if (authorizedGroupUserService.isUserAuthorized(chatId, userId)) {
                             var scheduleOpt = groupScheduleService.findSchedulerUrl(chatId);
                             if (scheduleOpt.isPresent()) {
                                 var scheduleUrl = scheduleOpt.get();
-                                var botMessage = messageService.sendPhoto(chatId, scheduleUrl, "График");
-                                sendAndDeleteMessage(botMessage, userId, DEFAULT_DELAY);
+                                var botMessage = messageService.sendPhoto(userId, scheduleUrl, "График");
+                                sendAndDeleteMessage(botMessage, userId, DELAY_25);
                             } else {
                                 var msg = messageService.sendText(chatId, "Ссылка не найдена");
-                                sendAndDeleteMessage(msg, userId, DEFAULT_DELAY);
+                                sendAndDeleteMessage(msg, userId, DELAY_25);
                             }
                         } else {
                             var msg = messageService.sendText(chatId,
                                     "У вас нет доступа. Вы не в списке для этой группы.");
-                            sendAndDeleteMessage(msg, userId, DEFAULT_DELAY);
+                            sendAndDeleteMessage(msg, userId, DELAY_25);
                         }
                     }
-                } else {
-                    messageService.sendText(chatId, "Команда /schedule доступна только внутри группы.");
-                    sendAndDeleteMessage(message, userId, DEFAULT_DELAY);
+            }
+            case "/setgroup" -> {
+                if (!userId.equals(admin)) {
+                    var msg = messageService.sendText(chatId, "Только админ может выполнять эту команду.");
+                    sendAndDeleteMessage(msg, chatId, DELAY_15);
+                }
+                if (parts.length < 3) {
+                    var msg = messageService.sendText(chatId, "Использование: /setgroup <groupChatId> <scheduleUrl>");
+                    sendAndDeleteMessage(msg, chatId, DELAY_15);
+                }
+                try {
+                    var grpId = Long.parseLong(parts[1]);
+                    var url = parts[2];
+                    groupScheduleService.upsertGroup(grpId, url);
+                    var okMsg = messageService.sendText(chatId,
+                            "Группа " + grpId + " зарегистрирована/обновлена со ссылкой: " + url);
+                    sendAndDeleteMessage(okMsg, chatId, DELAY_15);
+                } catch (NumberFormatException e) {
+                    var msg = messageService.sendText(chatId, "Неверный формат groupChatId.");
+                    sendAndDeleteMessage(msg, chatId, 10);
                 }
             }
-//            case "/setgroup" -> {
-//                if (!userId.equals(@Value("${app.bot.admin-id}")String admin))) {
-//
-//                }
-//            }
 
+            case "/removeuser" -> {
+                if (!userId.equals(admin)) {
+                    var msg = messageService
+                            .sendText(chatId, "Только админ может выполнять эту команду.");
+                    sendAndDeleteMessage(msg, chatId, DELAY_15);
+                }
+                if (parts.length < 3) {
+                    var msg = messageService.sendText(chatId,
+                            "Использование: /removeuser <groupChatId> <userId>");
+                    sendAndDeleteMessage(msg, chatId, DELAY_15);
+                }
+                try {
+                    var grpId = Long.parseLong(parts[1]);
+                    var rmUserId = Long.parseLong(parts[2]);
+                    authorizedGroupUserService.removeUser(grpId, rmUserId);
+                    var msg = messageService.sendText(chatId,
+                            "Пользователь " + rmUserId + " удалён из группы " + grpId + ".");
+                    sendAndDeleteMessage(msg, chatId, DELAY_15);
+                } catch (NumberFormatException e) {
+                    var msg = messageService.sendText(chatId, "Неверный формат аргументов.");
+                    sendAndDeleteMessage(msg, chatId, DELAY_15);
+                }
+            }
             case "/help" -> {
                 var help = """
                         *Команды:*
@@ -112,16 +155,21 @@ public class CommandHandler {
                         /start – начать работу
                         /hi – приветствие
                         /help – помощь
+                        /schedule — показать график для *текущей* группы (если вы в списке)
+                        
+                        *Админские*:
+                        /setgroup <groupChatId> <scheduleUrl> — зарегистрировать/обновить группу с её ссылкой
+                        /removeuser <groupChatId> <userId>
                         
                         Используйте /start для начала работы.
                         """;
-                var botMessage = messageService.sendText(userId, help);
-                sendAndDeleteMessage(botMessage, userId, HELP_DELAY);
+                var botMessage = messageService.sendText(chatId, help);
+                sendAndDeleteMessage(botMessage, userId, DELAY_100);
             }
             default -> {
                 var botMessage = messageService
                         .sendText(userId, "❓ Неизвестная команда. Попробуйте /help.");
-                sendAndDeleteMessage(botMessage, userId, DEFAULT_DELAY);
+                sendAndDeleteMessage(botMessage, userId, DELAY_25);
             }
         }
     }

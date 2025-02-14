@@ -33,7 +33,7 @@ class CallbackQueryHandlerTest {
     void setUp() {
         medicineService = mock(MedicineService.class);
         messageService = mock(MessageService.class);
-        callbackQueryHandler = new CallbackQueryHandler(medicineService, messageService);
+//        callbackQueryHandler = new CallbackQueryHandler(medicineService, messageService);
 
         when(messageService.escapeMarkdownV2(anyString()))
                 .thenAnswer(invocation -> invocation.getArgument(0));

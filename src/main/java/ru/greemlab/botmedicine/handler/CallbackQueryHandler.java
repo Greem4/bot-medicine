@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import ru.greemlab.botmedicine.dto.MedicineResponse;
+import ru.greemlab.botmedicine.service.AuthorizedGroupUserService;
+import ru.greemlab.botmedicine.service.GroupScheduleService;
 import ru.greemlab.botmedicine.service.MedicineService;
 import ru.greemlab.botmedicine.service.MessageService;
 
@@ -16,6 +18,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CallbackQueryHandler {
     private static final String CALLBACK_CHECK_RED = "CHECK_RED";
+    public static final String CALLBACK_VIEW_SCHEDULE = "VIEW_SCHEDULE";
+
     private static final String PROCESSING_MESSAGE = "Запрос обрабатывается…";
     private static final String NO_MEDICINES_MESSAGE = "✅ Нет просроченных лекарств.";
     private static final String ERROR_MESSAGE = "❗ Произошла ошибка при запросе к серверу.";
@@ -24,6 +28,8 @@ public class CallbackQueryHandler {
 
     private final MedicineService medicineService;
     private final MessageService messageService;
+    private final GroupScheduleService groupScheduleService;
+    private final AuthorizedGroupUserService authorizedGroupUserService;
 
     public void handleCallback(CallbackQuery callbackQuery) {
         var userId = callbackQuery.getFrom().getId();
@@ -35,9 +41,37 @@ public class CallbackQueryHandler {
 
         if (CALLBACK_CHECK_RED.equalsIgnoreCase(callbackData)) {
             handleCheckRedCallback(userId, messageId);
+        } else if (CALLBACK_VIEW_SCHEDULE.equalsIgnoreCase(callbackData)) {
+            handleViewScheduleCallback(userId, messageId);
         } else {
             log.warn("Неизвестное значение callback: {}", callbackData);
             messageService.sendText(userId, UNKNOWN_CALLBACK_MESSAGE);
+        }
+    }
+
+    private void handleViewScheduleCallback(Long userId, Integer originalMessageId) {
+        try {
+            var groups = authorizedGroupUserService.findGroupsForUser(userId);
+            if (groups.isEmpty()) {
+                messageService.editText(userId, originalMessageId,
+                        "У вас нет доступа ни к одной группе (не зарегистрированы).");
+            }
+            var groupId = groups.getFirst();
+            var schedulerOpt = groupScheduleService.findSchedulerUrl(groupId);
+
+            if (schedulerOpt.isEmpty()) {
+                messageService.editText(userId, originalMessageId,
+                        "Ссылка на график для вашей группы не найдена.");
+            }
+            var scheduleUrl = schedulerOpt.get();
+            messageService.editText(userId, originalMessageId, "Отправляю график отдельным сообщением…");
+
+            messageService.sendPhoto(userId, scheduleUrl, "График");
+
+        } catch (Exception e) {
+            log.error("Ошибка при получении графика", e);
+            messageService.editText(userId, originalMessageId,
+                    "Произошла ошибка при получении графика.");
         }
     }
 

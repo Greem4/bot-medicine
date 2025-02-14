@@ -7,6 +7,7 @@ import ru.greemlab.botmedicine.entity.AuthorizedGroupUSer;
 import ru.greemlab.botmedicine.entity.AuthorizedGroupUserKey;
 import ru.greemlab.botmedicine.repository.AuthorizedGroupUserRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -38,5 +39,9 @@ public class AuthorizedGroupUserService {
         var key = new AuthorizedGroupUserKey(groupChatId, userId);
         return authorizedGroupUserRepository.findById(key)
                 .map(u -> new AuthorizedGroupUserDto(u.getGroupChatId(), u.getUserId()));
+    }
+
+    public List<Long> findGroupsForUser(Long userId) {
+        return authorizedGroupUserRepository.findAllGroupsByUserId(userId);
     }
 }
