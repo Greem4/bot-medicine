@@ -109,13 +109,13 @@ public class CallbackQueryHandler {
 
     private String formatMedicine(MedicineResponse.MedicineViewList m) {
         return String.format("""
-                        • *%s* \\(%s\\)
+                        • *%s* (%s)
                           Срок годности до:
                           ➡*%s*
                         """,
-                messageService.escapeMarkdownV2(m.name()),
-                messageService.escapeMarkdownV2(m.serialNumber()),
-                messageService.escapeMarkdownV2(m.expirationDate())
+                m.name(),
+                m.serialNumber(),
+                m.expirationDate()
         );
     }
 

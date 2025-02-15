@@ -132,7 +132,7 @@ public class MessageService {
                     .chatId(chatId.toString())
                     .messageId(messageId)
                     .text(newText)
-                    .parseMode("MarkdownV2")
+                    .parseMode("Markdown")
                     .build();
             execute.callApi(edit);
         } catch (Exception e) {
@@ -151,10 +151,6 @@ public class MessageService {
         } catch (Exception e) {
             log.error("Ошибка при отправке ответа на callback query: {}", e.toString());
         }
-    }
-
-    public String escapeMarkdownV2(String text) {
-        return text.replaceAll("([_*\\[\\]()~`>#+=|{}.!-])", "\\\\$1");
     }
 
     private Message executeCall(SendMessage msg) {
