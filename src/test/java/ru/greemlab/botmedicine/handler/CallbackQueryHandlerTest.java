@@ -35,8 +35,8 @@ class CallbackQueryHandlerTest {
         messageService = mock(MessageService.class);
 //        callbackQueryHandler = new CallbackQueryHandler(medicineService, messageService);
 
-        when(messageService.escapeMarkdownV2(anyString()))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+//        when(messageService.escapeMarkdownV2(anyString()))
+//                .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
