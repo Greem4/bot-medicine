@@ -19,8 +19,11 @@ import lombok.Setter;
 public class AuthorizedGroupUSer {
 
     @Id
-    private Long groupChatId;
+    private String userName;
 
     @Id
     private Long userId;
+
+    @Id
+    private Long groupChatId;
 }

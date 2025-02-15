@@ -16,27 +16,27 @@ public class AuthorizedGroupUserService {
 
     private final AuthorizedGroupUserRepository authorizedGroupUserRepository;
 
-    public boolean isUserAuthorized(Long groupChatId, Long userId) {
-        var key = new AuthorizedGroupUserKey(groupChatId, userId);
+    public boolean isUserAuthorized(String userName, Long userId, Long groupChatId) {
+        var key = new AuthorizedGroupUserKey(userName, userId, groupChatId);
         return authorizedGroupUserRepository.existsById(key);
     }
 
 
-    public AuthorizedGroupUserDto addUser(Long groupChatId, Long userId) {
-        var key = new AuthorizedGroupUserKey(groupChatId, userId);
+    public void addUser(String userName, Long userId, Long groupChatId) {
+        var key = new AuthorizedGroupUserKey(userName, userId, groupChatId);
         if (!authorizedGroupUserRepository.existsById(key)) {
-            authorizedGroupUserRepository.save(new AuthorizedGroupUSer(groupChatId, userId));
+            authorizedGroupUserRepository.save(new AuthorizedGroupUSer(userName, userId, groupChatId));
         }
-        return new AuthorizedGroupUserDto(groupChatId, userId);
+        new AuthorizedGroupUserDto(groupChatId, userId);
     }
 
-    public void removeUser(Long groupChatId, Long userId) {
-        var key = new AuthorizedGroupUserKey(groupChatId, userId);
+    public void removeUser(String userName, Long userId, Long groupChatId) {
+        var key = new AuthorizedGroupUserKey(userName, userId, groupChatId);
         authorizedGroupUserRepository.deleteById(key);
     }
 
-    public Optional<AuthorizedGroupUserDto> find(Long groupChatId, Long userId) {
-        var key = new AuthorizedGroupUserKey(groupChatId, userId);
+    public Optional<AuthorizedGroupUserDto> find(String userName, Long userId, Long groupChatId) {
+        var key = new AuthorizedGroupUserKey(userName, userId, groupChatId);
         return authorizedGroupUserRepository.findById(key)
                 .map(u -> new AuthorizedGroupUserDto(u.getGroupChatId(), u.getUserId()));
     }

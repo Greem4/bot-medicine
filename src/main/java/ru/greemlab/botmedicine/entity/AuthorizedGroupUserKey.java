@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AuthorizedGroupUserKey {
 
-    private Long groupChatId;
+    private String userName;
     private Long userId;
+    private Long groupChatId;
 }

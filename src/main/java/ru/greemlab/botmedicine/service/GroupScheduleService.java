@@ -18,10 +18,10 @@ public class GroupScheduleService {
         return groupScheduleRepository.existsById(groupChatId);
     }
 
-    public GroupScheduleDto upsertGroup(Long groupChatId, String schedulerUrl) {
+    public void upsertGroup(Long groupChatId, String schedulerUrl) {
         var entity = new GroupSchedule(groupChatId, schedulerUrl);
         groupScheduleRepository.save(entity);
-        return new GroupScheduleDto(groupChatId, schedulerUrl);
+        new GroupScheduleDto(groupChatId, schedulerUrl);
     }
 
     public Optional<String> findSchedulerUrl(Long groupChatId) {

@@ -35,6 +35,7 @@ public class CommandHandler {
         var text = (message.getText() == null) ? "" : message.getText().trim();
         var chatId = message.getChatId();
         var userMessageId = message.getMessageId();
+        var userName = message.getFrom().getUserName();
 
         if (!text.startsWith("/")) {
             return;
@@ -50,7 +51,7 @@ public class CommandHandler {
         if (chatId < 0) {
             var registered = groupScheduleService.isGroupRegistered(chatId);
             if (registered) {
-                authorizedGroupUserService.addUser(chatId, userId);
+                authorizedGroupUserService.addUser(userName,userId, chatId);
                 log.info("Пользователь {} добавлен в группу {}", userId, chatId);
             }
         }
@@ -84,9 +85,9 @@ public class CommandHandler {
                     if (!groupScheduleService.isGroupRegistered(chatId)) {
                         var notRegMsg = messageService.sendText(chatId,
                                 "Эта группа не зарегистрирована, график недоступен.");
-                        sendAndDeleteMessage(notRegMsg, userId, DELAY_25);
+                        sendAndDeleteMessage(notRegMsg, userId, DELAY_10);
                     } else {
-                        if (authorizedGroupUserService.isUserAuthorized(chatId, userId)) {
+                        if (authorizedGroupUserService.isUserAuthorized(userName, userId, chatId)) {
                             var scheduleOpt = groupScheduleService.findSchedulerUrl(chatId);
                             if (scheduleOpt.isPresent()) {
                                 var scheduleUrl = scheduleOpt.get();
@@ -99,7 +100,7 @@ public class CommandHandler {
                         } else {
                             var msg = messageService.sendText(chatId,
                                     "У вас нет доступа. Вы не в списке для этой группы.");
-                            sendAndDeleteMessage(msg, userId, DELAY_25);
+                            sendAndDeleteMessage(msg, userId, DELAY_10);
                         }
                     }
             }
@@ -139,7 +140,7 @@ public class CommandHandler {
                 try {
                     var grpId = Long.parseLong(parts[1]);
                     var rmUserId = Long.parseLong(parts[2]);
-                    authorizedGroupUserService.removeUser(grpId, rmUserId);
+                    authorizedGroupUserService.removeUser(userName, grpId, rmUserId);
                     var msg = messageService.sendText(chatId,
                             "Пользователь " + rmUserId + " удалён из группы " + grpId + ".");
                     sendAndDeleteMessage(msg, chatId, DELAY_15);
