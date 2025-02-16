@@ -9,6 +9,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ru.greemlab.botmedicine.handler.CallbackQueryHandler;
 import ru.greemlab.botmedicine.handler.CommandHandler;
+import ru.greemlab.botmedicine.service.AdminCommandHandlerService;
 
 @Slf4j
 @Getter
@@ -23,14 +24,19 @@ public class MedicineBot extends TelegramLongPollingBot {
 
     private final CommandHandler commandHandler;
     private final CallbackQueryHandler callbackHandler;
+    private final AdminCommandHandlerService adminCommandHandlerService;
 
     @Override
     public void onUpdateReceived(Update update) {
-        if (update.hasCallbackQuery()) {
+        if (update.hasMessage()) {
+            var msg = update.getMessage();
+            if (msg.isCommand()) {
+                commandHandler.handleCommand(msg);
+            } else {
+                adminCommandHandlerService.handleRegularText(msg);
+            }
+        } else {
             callbackHandler.handleCallback(update.getCallbackQuery());
-        }
-        if (update.hasMessage() && update.getMessage().hasText()) {
-            commandHandler.handleCommand(update.getMessage());
         }
     }
 }
