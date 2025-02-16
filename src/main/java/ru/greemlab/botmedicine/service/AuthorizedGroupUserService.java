@@ -27,7 +27,7 @@ public class AuthorizedGroupUserService {
         if (!authorizedGroupUserRepository.existsById(key)) {
             authorizedGroupUserRepository.save(new AuthorizedGroupUSer(userName, userId, groupChatId));
         }
-        new AuthorizedGroupUserDto(groupChatId, userId);
+        new AuthorizedGroupUserDto(userName,groupChatId, userId);
     }
 
     public void removeUser(String userName, Long userId, Long groupChatId) {
@@ -38,7 +38,7 @@ public class AuthorizedGroupUserService {
     public Optional<AuthorizedGroupUserDto> find(String userName, Long userId, Long groupChatId) {
         var key = new AuthorizedGroupUserKey(userName, userId, groupChatId);
         return authorizedGroupUserRepository.findById(key)
-                .map(u -> new AuthorizedGroupUserDto(u.getGroupChatId(), u.getUserId()));
+                .map(u -> new AuthorizedGroupUserDto(u.getUserName(), u.getGroupChatId(), u.getUserId()));
     }
 
     public List<Long> findGroupsForUser(Long userId) {

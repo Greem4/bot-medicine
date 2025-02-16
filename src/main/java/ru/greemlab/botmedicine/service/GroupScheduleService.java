@@ -24,6 +24,22 @@ public class GroupScheduleService {
         new GroupScheduleDto(groupChatId, schedulerUrl);
     }
 
+    public void updateScheduleUrl(Long groupChatId, String schedulerUrl) {
+        var entity = groupScheduleRepository
+                .findById(groupChatId)
+                .orElse(new GroupSchedule(groupChatId, null));
+        entity.setScheduleUrl(schedulerUrl);
+        groupScheduleRepository.save(entity);
+    }
+
+    public void createOrUpdateGroup(Long groupChatId, String schedulerUrl) {
+        var entity = groupScheduleRepository
+                .findById(groupChatId)
+                .orElse(new GroupSchedule(null, schedulerUrl));
+        entity.setGroupChatId(groupChatId);
+        groupScheduleRepository.save(entity);
+    }
+
     public Optional<String> findSchedulerUrl(Long groupChatId) {
         return groupScheduleRepository.findById(groupChatId)
                 .map(GroupSchedule::getScheduleUrl);

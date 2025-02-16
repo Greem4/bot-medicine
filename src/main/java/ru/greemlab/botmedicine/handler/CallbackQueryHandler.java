@@ -39,20 +39,17 @@ public class CallbackQueryHandler {
         var messageId = callbackQuery.getMessage().getMessageId();
         var callbackData = callbackQuery.getData();
         var callbackQueryId = callbackQuery.getId();
+        var chatId = callbackQuery.getMessage().getChatId();
 
         messageService.answerCallbackQuery(callbackQueryId, PROCESSING_MESSAGE, false);
 
         switch (callbackData) {
             case CALLBACK_CHECK_RED -> handleCheckRedCallback(userId, messageId);
-
             case CALLBACK_VIEW_SCHEDULE -> handleViewScheduleCallback(userId, messageId);
 
             case CALLBACK_ADMIN_MENU -> handleAdminMenuCallback(userId, messageId);
-
             case CALLBACK_ADMIN_SET_GROUP -> handleAdminSetGpaCallback(userId, messageId);
-
             case CALLBACK_ADMIN_REMOVE_GROUP -> handleAdminRemoveGroupCallback(userId, messageId);
-
             case CALLBACK_ADMIN_REMOVE_USER -> handleAdminRemoveUserCallback(userId, messageId);
 
             default -> {

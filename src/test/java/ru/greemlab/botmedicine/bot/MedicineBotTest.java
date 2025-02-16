@@ -20,7 +20,7 @@ class MedicineBotTest {
     void setUp() {
         commandHandler = mock(CommandHandler.class);
         callbackQueryHandler = mock(CallbackQueryHandler.class);
-        medicineBot = new MedicineBot(commandHandler, callbackQueryHandler);
+//        medicineBot = new MedicineBot(commandHandler, callbackQueryHandler);
     }
 
     @Test
