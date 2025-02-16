@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import ru.greemlab.botmedicine.admin.AdminState;
 
 @Slf4j
 @Service
@@ -26,6 +27,11 @@ public class AdminCommandHandlerService {
         }
 
         var state = adminConversationService.getCurrentState(userId);
+
+        if (state == AdminState.NONE) {
+            return;
+        }
+
         switch (state) {
             case WAITING_FOR_SETGROUP_DATE -> {
                 try {
@@ -94,9 +100,8 @@ public class AdminCommandHandlerService {
                 }
                 adminConversationService.clearState(userId);
             }
-            default -> {
+            default ->
                 messageService.sendText(chatId, "Админ, команда не распознана. Попробуйте заново.");
-            }
         }
     }
 }

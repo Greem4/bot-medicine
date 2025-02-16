@@ -5,8 +5,8 @@ CREATE TABLE group_schedule
 );
 CREATE TABLE authorized_group_user
 (
-    user_name     VARCHAR(50) NOT NULL,
-    user_id       BIGINT      NOT NULL,
-    group_chat_id BIGINT      NOT NULL,
-    PRIMARY KEY (user_name,user_id, group_chat_id)
+    user_name     VARCHAR(50),
+    user_id       BIGINT NOT NULL,
+    group_chat_id BIGINT NOT NULL,
+    PRIMARY KEY (user_id, group_chat_id)
 );
