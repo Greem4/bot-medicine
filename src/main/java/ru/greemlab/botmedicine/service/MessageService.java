@@ -68,6 +68,10 @@ public class MessageService {
                 .text("Добавить/Обновить группу")
                 .callbackData("ADMIN_SET_GROUP")
                 .build();
+        var btnUpdateSchedule = InlineKeyboardButton.builder()
+                .text("Обновить график")
+                .callbackData("ADMIN_UPDATE_SCHEDULE")
+                .build();
         var btnRemoveGroup = InlineKeyboardButton.builder()
                 .text("Удалить группу")
                 .callbackData("ADMIN_REMOVE_GROUP")
@@ -79,6 +83,7 @@ public class MessageService {
 
         var rows = List.of(
                 List.of(btnSetGroup),
+                List.of(btnUpdateSchedule),
                 List.of(btnRemoveGroup),
                 List.of(btnRemoveUser)
         );

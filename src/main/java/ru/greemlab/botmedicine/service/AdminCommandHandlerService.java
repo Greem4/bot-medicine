@@ -42,6 +42,31 @@ public class AdminCommandHandlerService {
                 }
                 adminConversationService.clearState(userId);
             }
+            case WAITING_FOR_UPDATESCHEDULE -> {
+                try {
+                    var groups = authorizedGroupUserService.findGroupsForUser(userId);
+
+                    if (groups.isEmpty()) {
+                        messageService.sendText(chatId, "Нет групп");
+                        return;
+                    }
+
+                    var group = groups.getFirst();
+
+                    var parts = text.split("\\s+");
+                    var scheduleUrl = parts[0];
+                    groupScheduleService.updateScheduleUrl(group, scheduleUrl);
+
+                    messageService.sendText(chatId,
+                            "График график обновлен " + scheduleUrl);
+                } catch (Exception e) {
+                    messageService.sendText(chatId,
+                            "Ошибка формата. Нужен адрес графика");
+                } finally {
+                    adminConversationService.clearState(userId);
+                }
+
+            }
             case WAITING_FOR_REMOVEGPOUP_DATE -> {
                 try {
                     var grpId = Long.parseLong(text);
@@ -69,11 +94,9 @@ public class AdminCommandHandlerService {
                 }
                 adminConversationService.clearState(userId);
             }
-
             default -> {
                 messageService.sendText(chatId, "Админ, команда не распознана. Попробуйте заново.");
             }
         }
     }
-
 }

@@ -19,6 +19,7 @@ public class CallbackQueryHandler {
 
     private static final String CALLBACK_ADMIN_MENU = "ADMIN_MENU";
     private static final String CALLBACK_ADMIN_SET_GROUP = "ADMIN_SET_GROUP";
+    private static final String CALLBACK_ADMIN_UPDATE_SCHEDULE = "ADMIN_UPDATE_SCHEDULE";
     private static final String CALLBACK_ADMIN_REMOVE_GROUP = "ADMIN_REMOVE_GROUP";
     private static final String CALLBACK_ADMIN_REMOVE_USER = "ADMIN_REMOVE_USER";
 
@@ -48,7 +49,8 @@ public class CallbackQueryHandler {
             case CALLBACK_VIEW_SCHEDULE -> handleViewScheduleCallback(userId, messageId);
 
             case CALLBACK_ADMIN_MENU -> handleAdminMenuCallback(userId, messageId);
-            case CALLBACK_ADMIN_SET_GROUP -> handleAdminSetGpaCallback(userId, messageId);
+            case CALLBACK_ADMIN_SET_GROUP -> handleAdminSetGroupCallback(userId, messageId);
+            case CALLBACK_ADMIN_UPDATE_SCHEDULE -> handleAdminUpdateSchedule(userId, messageId);
             case CALLBACK_ADMIN_REMOVE_GROUP -> handleAdminRemoveGroupCallback(userId, messageId);
             case CALLBACK_ADMIN_REMOVE_USER -> handleAdminRemoveUserCallback(userId, messageId);
 
@@ -122,11 +124,18 @@ public class CallbackQueryHandler {
                 "Админ-меню. Выберите действие:");
     }
 
-    private void handleAdminSetGpaCallback(Long userId, Integer originalMessageId) {
+    private void handleAdminSetGroupCallback(Long userId, Integer originalMessageId) {
         rights(userId, originalMessageId);
         messageService.editText(userId, originalMessageId,
                 "Отправьте мне в личку сообщение в формате:\n\n`groupChatId scheduleUrl`");
         adminConversationService.waitForSetGroupData(userId);
+    }
+
+    private void handleAdminUpdateSchedule(Long userId, Integer originalMessageId) {;
+        rights(userId, originalMessageId);
+        messageService.editText(userId, originalMessageId,
+                "Отправьте url адрес графика");
+        adminConversationService.waitForSetScheduleUrl(userId);
     }
 
     private void handleAdminRemoveGroupCallback(Long userId, Integer originalMessageId) {

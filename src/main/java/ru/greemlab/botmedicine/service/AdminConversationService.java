@@ -15,6 +15,10 @@ public class AdminConversationService {
         adminStates.put(adminId, AdminState.WAITING_FOR_SETGROUP_DATE);
     }
 
+    public void waitForSetScheduleUrl(Long adminId) {
+        adminStates.put(adminId, AdminState.WAITING_FOR_UPDATESCHEDULE);
+    }
+
     public void waitForRemoveGroupData(Long adminId) {
         adminStates.put(adminId, AdminState.WAITING_FOR_REMOVEGPOUP_DATE);
     }
