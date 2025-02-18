@@ -10,4 +10,6 @@ public class BotMedicineApplication {
         SpringApplication.run(BotMedicineApplication.class, args);
     }
 
+
+
 }
