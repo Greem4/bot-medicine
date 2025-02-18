@@ -1,0 +1,48 @@
+services:
+  telegram-bot:
+    image: greem4/medicine-bot:latest
+    container_name: bot
+    restart: always
+    environment:
+      BOT_USERNAME: ${BOT_USERNAME}
+      TOKEN_BOT: ${TOKEN_BOT}
+      API_URL: ${API_URL}
+      ADMIN_ID: ${ADMIN_ID}
+      DB_URL: jdbc:postgresql://telegram-db:5432/telegram_bot_db
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      TZ: Europe/Moscow
+    ports:
+      - "8083:8083"
+    networks:
+      - telegram_net
+    depends_on:
+      telegram-db:
+        condition: service_healthy
+
+  telegram-db:
+    image: postgres:17-alpine
+    container_name: telegram_db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: telegram_bot_db
+      TZ: Europe/Moscow
+      POSTGRES_INITDB_ARGS: "--locale=ru_RU.UTF-8 --lc-collate=C --encoding=UTF-8"
+    volumes:
+      - ./telegram_pg_data:/var/lib/postgresql/data
+      - ./telegram_postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5434:5432"
+    networks:
+      - telegram_net
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d telegram_bot_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  telegram_net:
+    driver: bridge
