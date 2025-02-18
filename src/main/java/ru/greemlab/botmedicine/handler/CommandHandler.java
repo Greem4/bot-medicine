@@ -25,10 +25,9 @@ public class CommandHandler {
 
     private final MessageService messageService;
     private final DeleteScheduler deleteScheduler;
-
+    private final CallbackQueryHandler callbackQueryHandler;
     private final GroupScheduleService groupScheduleService;
     private final AuthorizedGroupUserService authorizedGroupUserService;
-
 
     public void handleCommand(Message message) {
         var text = (message.getText() == null) ? "" : message.getText().trim();
@@ -47,7 +46,7 @@ public class CommandHandler {
         if (chatId < 0) {
             var registered = groupScheduleService.isGroupRegistered(chatId);
             if (registered) {
-                authorizedGroupUserService.addUser(userName,userId, chatId);
+                authorizedGroupUserService.addUser(userName, userId, chatId);
                 log.info("Пользователь {} добавлен в группу {}", userId, chatId);
             }
         }
@@ -73,13 +72,19 @@ public class CommandHandler {
                 sendAndDeleteMessage(botMessage, userId, DELAY_DAY);
 
             }
+
+            case "/expiration" -> callbackQueryHandler.handleCheckRedExpiration(userId, null, false);
+            case "/schedule" -> callbackQueryHandler.handleViewSchedule(userId, null, false);
+
             case "/help" -> {
                 var help = """
                         *Команды:*
                         
-                        /start – начать работу
-                        /hi – приветствие
-                        /help – помощь
+                        /start - начать работу
+                        /hi - приветствие
+                        /help - помощь
+                        /expiration - срок годности
+                        /schedule - график
                         
                         Используйте /start для начала работы.
                         """;

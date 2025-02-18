@@ -40,13 +40,12 @@ public class CallbackQueryHandler {
         var messageId = callbackQuery.getMessage().getMessageId();
         var callbackData = callbackQuery.getData();
         var callbackQueryId = callbackQuery.getId();
-        var chatId = callbackQuery.getMessage().getChatId();
 
         messageService.answerCallbackQuery(callbackQueryId, PROCESSING_MESSAGE, false);
 
         switch (callbackData) {
-            case CALLBACK_CHECK_RED -> handleCheckRedCallback(userId, messageId);
-            case CALLBACK_VIEW_SCHEDULE -> handleViewScheduleCallback(userId, messageId);
+            case CALLBACK_CHECK_RED -> handleCheckRedExpiration(userId, messageId, true);
+            case CALLBACK_VIEW_SCHEDULE -> handleViewSchedule(userId, messageId, true);
 
             case CALLBACK_ADMIN_MENU -> handleAdminMenuCallback(userId, messageId);
             case CALLBACK_ADMIN_SET_GROUP -> handleAdminSetGroupCallback(userId, messageId);
@@ -62,47 +61,53 @@ public class CallbackQueryHandler {
 
     }
 
-    private void handleCheckRedCallback(Long chatId, Integer messageId) {
+    public void handleCheckRedExpiration(Long chatId, Integer originalMsgId, boolean isCallback) {
         try {
             List<MedicineResponse.MedicineViewList> redList = medicineService.getRedMedicines();
             if (redList == null || redList.isEmpty()) {
-                messageService.editText(chatId, messageId, NO_MEDICINES_MESSAGE);
+                sendOrEdit(chatId, originalMsgId, NO_MEDICINES_MESSAGE, isCallback);
             } else {
                 String formatted = redList.stream()
                         .map(this::formatMedicine)
                         .collect(Collectors.joining());
-                messageService.editText(chatId, messageId, HEADER + formatted);
+                sendOrEdit(chatId, originalMsgId, HEADER + formatted, isCallback);
             }
         } catch (Exception e) {
             log.error("Ошибка при получении списка лекарств", e);
-            messageService.editText(chatId, messageId, ERROR_MESSAGE);
+            sendOrEdit(chatId, originalMsgId, ERROR_MESSAGE, isCallback);
         }
     }
 
-    private void handleViewScheduleCallback(Long userId, Integer originalMessageId) {
+    public void handleViewSchedule(Long userId, Integer originalMsgId, boolean isCallback) {
         try {
             var groups = authorizedGroupUserService.findGroupsForUser(userId);
             if (groups.isEmpty()) {
-                messageService.editText(userId, originalMessageId,
-                        "У вас нет доступа ни к одной группе.");
+                sendOrEdit(userId, originalMsgId,
+                        "У вас нет доступа ни к одной группе.", isCallback);
             }
             var groupId = groups.getFirst();
             var schedulerOpt = groupScheduleService.findSchedulerUrl(groupId);
-
             if (schedulerOpt.isEmpty()) {
-                messageService.editText(userId, originalMessageId,
-                        "Ссылка на график для вашей группы не найдена.");
+                sendOrEdit(userId, originalMsgId,
+                        "Ссылка на график для вашей группы не найдена.", isCallback);
             }
+
             var scheduleUrl = schedulerOpt.get();
-            messageService.editText(userId, originalMessageId,
-                    "Отправляю график отдельным сообщением…");
 
             messageService.sendPhoto(userId, scheduleUrl, "График");
 
         } catch (Exception e) {
             log.error("Ошибка при получении графика", e);
-            messageService.editText(userId, originalMessageId,
-                    "Произошла ошибка при получении графика.");
+            sendOrEdit(userId, originalMsgId,
+                    "Произошла ошибка при получении графика.", isCallback);
+        }
+    }
+
+    private void sendOrEdit(Long chatId, Integer messageId, String text, boolean isCallback) {
+        if (isCallback && messageId != null) {
+            messageService.editText(chatId, messageId, text);
+        } else {
+            messageService.sendText(chatId, text);
         }
     }
 
@@ -131,7 +136,7 @@ public class CallbackQueryHandler {
         adminConversationService.waitForSetGroupData(userId);
     }
 
-    private void handleAdminUpdateSchedule(Long userId, Integer originalMessageId) {;
+    private void handleAdminUpdateSchedule(Long userId, Integer originalMessageId) {
         rights(userId, originalMessageId);
         messageService.editText(userId, originalMessageId,
                 "Отправьте url адрес графика");
